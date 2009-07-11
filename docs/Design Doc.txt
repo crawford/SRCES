@@ -1,0 +1,103 @@
+---Components---
+	CenterRing
+		A web interface to SRCES
+		Shows the user the current state of each TicketBooth
+		Allows the user to change the state (locked/unlocked) of any public TicketBooth
+			Controls will be disabled if the TicketBooth is private
+		*Automatically updates page to show the status information when it changes
+		Connected to multiple LionTamers
+
+	LionTamer
+		A communication daemon for the TicketBooth
+		Runs continuously on a host machine physically connected to a TicketBooth
+		Connected to CenterRing via a network connection
+		Listens for status updates from its TicketBooth
+			Serial Connection
+		Listens for messages from CenterRing (queries or commands)
+			TCP/IP Connection
+		Responds to queries and commands from CenterRing
+
+	TicketBooth
+		The physical access controller for each door
+		Checks iButton IDs based off of an internal access list
+		Can be sent into private mode
+			Blocks all open requests
+		Controls the locking mechanism on the door
+		Can disable the 1-Wire bus if there is a short
+	
+--Protocols---
+	HighWire
+		Used to talk between all the components
+		Can be sent over serial in plain text or over TCP/IP
+		A synchronous/asynchronous protocol (depends on the message type)
+
+		Frame Contents (in order):
+			-Name-				-Size-
+			Frame Start			1 byte			
+			Message Type		4 bits
+			Operation Code		4 bits
+			Payload				n bytes
+			Frame End			1 byte
+
+		Frame Start
+			0xBD
+
+		Message Type
+			Determines what kind of message the transmission is
+			Response 0x0
+				No response to frame
+				The operation code must be the same as the command this is in response to
+				Payload is the result (0x00 = success, 0xFF = invalid payload, anything else is the error code)
+
+			Command 0x1
+				A response is needed
+				The payload is the command parameters
+
+			Query 0x2
+				A response is needed
+				The payload is empty
+
+			Broadcast 0xF
+				No response to frame
+				The payload is the new state
+
+***			Override 0x7
+***				No response to frame
+***				The payload is empty
+
+		Operation Code
+			Locked state 0x0
+				Can be set or queried (payload is 1 byte, 0x00 = unlocked, 0x01 = locked)
+				If command is sent while door is locked, 0x01 is returned
+
+			Privacy state 0x1
+				Can only be queried (payload is 1 byte, 0x00 = public, 0x01 = private)
+				If command is sent, 0x11 is returned
+
+			1-Wire Bus state 0x2
+				Can be set or queried (payload is 1 byte, 0x00 = disabled, 0x01 = enabled)
+
+***			Privacy state override 0xC
+***				Takes the TicketBooth out of privacy mode
+
+			Invalid Login 0xF
+				Can only be broadcasted (payload is the 8 byte ibutton id)
+				A command or query will return 0xFF
+
+		Payload
+			Variable length (my be 0 bytes)
+
+		Frame End
+			0xDB
+
+
+		-Examples-
+			Unlock door (if in public mode)
+				send: 		0xBD 0x10 0x00 0xDB
+				receive:	0xBD 0x00 0x00 0xDB
+
+			Query 1-Wire Bus state
+				send:		0xBD 0x22 0xDB
+				receive:	0xBD 0x02 0x0? 0xDB
+
+
