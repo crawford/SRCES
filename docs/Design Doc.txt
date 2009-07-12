@@ -16,6 +16,7 @@
 		Listens for messages from CenterRing (queries or commands)
 			TCP/IP Connection
 		Responds to queries and commands from CenterRing
+		Looks up user's name when an invalid login is attempted and logs it to a file
 
 	TicketBooth
 		The physical access controller for each door
