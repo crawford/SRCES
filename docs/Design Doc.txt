@@ -37,6 +37,7 @@
 			Frame Start			1 byte			
 			Message Type		4 bits
 			Operation Code		4 bits
+			Payload Size		1 byte
 			Payload				n bytes
 			Frame End			1 byte
 
@@ -62,10 +63,6 @@
 				No response to frame
 				The payload is the new state
 
-***			Override 0x7
-***				No response to frame
-***				The payload is empty
-
 		Operation Code
 			Locked state 0x0
 				Can be set or queried (payload is 1 byte, 0x00 = unlocked, 0x01 = locked)
@@ -78,15 +75,15 @@
 			1-Wire Bus state 0x2
 				Can be set or queried (payload is 1 byte, 0x00 = disabled, 0x01 = enabled)
 
-***			Privacy state override 0xC
-***				Takes the TicketBooth out of privacy mode
-
 			Invalid Login 0xF
 				Can only be broadcasted (payload is the 8 byte ibutton id)
 				A command or query will return 0xFF
 
+		Payload Size
+			Size of the payload (in bytes)
+
 		Payload
-			Variable length (my be 0 bytes)
+			Variable length (0-255 bytes)
 
 		Frame End
 			0xDB
