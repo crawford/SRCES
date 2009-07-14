@@ -1,6 +1,6 @@
 main:
 	sdcc -mpic14 -p16f688 -V main.c
-	cp main.hex ../release
+	cp main.hex ../release/main.hex
 
 clean:
 	rm -f main.asm
