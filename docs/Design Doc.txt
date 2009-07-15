@@ -69,11 +69,15 @@
 				If command is sent while door is locked, 0x01 is returned
 
 			Privacy state 0x1
-				Can only be queried (payload is 1 byte, 0x00 = public, 0x01 = private)
+				Can be set or queried (payload is 1 byte, 0x00 = public, 0x01 = private)
 				If command is sent, 0x11 is returned
 
 			1-Wire Bus state 0x2
 				Can be set or queried (payload is 1 byte, 0x00 = disabled, 0x01 = enabled)
+
+			Failed Logins 0x3
+				Can only be queried (payload is empty)
+				Get a list of the failed logins (list of comma seperated values)
 
 			Invalid Login 0xF
 				Can only be broadcasted (payload is the 8 byte ibutton id)
