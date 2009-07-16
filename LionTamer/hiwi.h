@@ -9,3 +9,6 @@
 #define HIWI_1_WIRE_OPCODE 0x2
 #define HIWI_FAILED_LOGINS_OPCODE 0x3
 #define HIWI_INVALID_LOGIN_OPCODE 0x4
+
+int query_state();
+int set_state();
