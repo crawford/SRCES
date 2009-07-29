@@ -8,11 +8,11 @@
 #include "hiwi.h"
 
 int main() {
-    char *test_data;
-    int status, sock, len;
+    int status, sock;
     struct addrinfo hints, *res, *cur;
+    hiwi_packet_s pkt;
 
-    test_data = query_locked_state();
+    pkt = query_locked_state();
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -38,8 +38,13 @@ int main() {
 
     }
 
-    if ((len = send(sock, test_data, sizeof test_data, 0)) == -1) {
-        perror("sendto");
+    char test[4];
+    test[0] = pkt.start;
+    test[1] = (pkt.headers & 0xFF00) >> 8;
+    test[2] = pkt.headers & 0x00FF;
+    test[3] = pkt.stop;
+    if ((send(sock, test, sizeof test, 0)) == -1) {
+        perror("send");
         exit(1);
     }
 
