@@ -4,7 +4,7 @@
  * used for the hiwi protocol.
  */
 #include "hiwi.h"
-#include <string.h>
+#include <stdlib.h>
 #define HIWI_FRAME_START 0xBD
 #define HIWI_FRAME_END 0xDB
 #define HIWI_RESPONSE_MT 0x0000
@@ -17,16 +17,26 @@
 #define HIWI_FAILED_LOGINS_OPCODE 0x0300
 #define HIWI_INVALID_LOGIN_OPCODE 0x0400
 
-hiwi_packet_s query_locked_state() {
-    hiwi_packet_s pkt;
+void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt) {
+    if (pkt->data == 0) {
+        free(pkt);
+    } else {
+        free(pkt->data);
+        free(pkt);
+    }
+}
 
-    memset(&pkt, 0, sizeof pkt);
+hiwi_pkt_ptr query_locked_state() {
+    hiwi_pkt_ptr pkt;
 
-    pkt.start = HIWI_FRAME_START;
-    pkt.stop = HIWI_FRAME_END;
-    pkt.headers |= HIWI_LOCKED_OPCODE;
-    pkt.headers |= HIWI_QUERY_MT;
-    pkt.headers |= (char)(sizeof pkt);
+    pkt = malloc(4);
+
+    pkt->start = HIWI_FRAME_START;
+    pkt->stop = HIWI_FRAME_END;
+    pkt->headers |= HIWI_LOCKED_OPCODE;
+    pkt->headers |= HIWI_QUERY_MT;
+    pkt->headers |= 0;
+    pkt->data = 0;
 
     return pkt;
 }

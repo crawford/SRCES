@@ -1,8 +1,11 @@
-typedef struct {
+struct hiwi_pkt_s {
     unsigned char start;
     unsigned short headers;
-    //unsigned char *data;
+    char *data;
     unsigned char stop;
-} hiwi_packet_s;
+};
 
-hiwi_packet_s query_locked_state();
+typedef struct hiwi_pkt_s * hiwi_pkt_ptr;
+
+hiwi_pkt_ptr query_locked_state();
+void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt);

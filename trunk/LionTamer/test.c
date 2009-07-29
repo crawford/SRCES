@@ -7,10 +7,55 @@
 #include <unistd.h>
 #include "hiwi.h"
 
+int send_pkt(hiwi_pkt_ptr pkt, int sock) {
+    if (pkt->data == 0) {
+        char pkt_c[4];
+        pkt_c[0] = pkt->start;
+        pkt_c[1] = (pkt->headers & 0xFF00) >> 8;
+        pkt_c[2] = pkt->headers & 0x00FF;
+        pkt_c[3] = pkt->stop;
+
+        send(sock, pkt_c, sizeof pkt_c, 0);
+
+        free_hiwi_pkt_ptr(pkt);
+
+        return 0;
+    } else if (strlen(pkt->data) > 0) {
+        char pkt_c[4 + strlen(pkt->data)];
+        pkt_c[0] = pkt->start;
+        pkt_c[1] = (pkt->headers & 0xFF00) >> 8;
+        pkt_c[2] = pkt->headers & 0x00FF;
+        strcpy(pkt_c + 3, pkt->data);
+        pkt_c[4 + strlen(pkt->data) - 1] = pkt->stop;
+
+        send(sock, pkt_c, sizeof pkt_c, 0);
+
+        free_hiwi_pkt_ptr(pkt);
+
+        return 0;
+    } else {
+        char pkt_c[5];
+        pkt_c[0] = pkt->start;
+        pkt_c[1] = (pkt->headers & 0xFF00) >> 8;
+        pkt_c[2] = pkt->headers & 0x00FF;
+        printf("%d\n", *(pkt->data));
+        pkt_c[3] = *(pkt->data);
+        pkt_c[4] = pkt->stop;
+        
+        send(sock, pkt_c, sizeof pkt_c, 0);
+
+        free_hiwi_pkt_ptr(pkt);
+
+        return 0;
+    }
+
+    return -1;
+}
+
 int main() {
     int status, sock;
     struct addrinfo hints, *res, *cur;
-    hiwi_packet_s pkt;
+    hiwi_pkt_ptr pkt;
 
     pkt = query_locked_state();
 
@@ -38,15 +83,7 @@ int main() {
 
     }
 
-    char test[4];
-    test[0] = pkt.start;
-    test[1] = (pkt.headers & 0xFF00) >> 8;
-    test[2] = pkt.headers & 0x00FF;
-    test[3] = pkt.stop;
-    if ((send(sock, test, sizeof test, 0)) == -1) {
-        perror("send");
-        exit(1);
-    }
+    send_pkt(pkt,sock);
 
     freeaddrinfo(res);
 
