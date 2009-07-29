@@ -40,3 +40,48 @@ hiwi_pkt_ptr query_locked_state() {
 
     return pkt;
 }
+
+hiwi_pkt_ptr query_priv_state() {
+    hiwi_pkt_ptr pkt;
+
+    pkt = malloc(4);
+
+    pkt->start = HIWI_FRAME_START;
+    pkt->stop = HIWI_FRAME_END;
+    pkt->headers |= HIWI_PRIVACY_OPCODE;
+    pkt->headers |= HIWI_QUERY_MT;
+    pkt->headers |= 0;
+    pkt->data = 0;
+
+    return pkt;
+}
+
+hiwi_pkt_ptr query_1wire_state() {
+    hiwi_pkt_ptr pkt;
+
+    pkt = malloc(4);
+
+    pkt->start = HIWI_FRAME_START;
+    pkt->stop = HIWI_FRAME_END;
+    pkt->headers |= HIWI_1_WIRE_OPCODE;
+    pkt->headers |= HIWI_QUERY_MT;
+    pkt->headers |= 0;
+    pkt->data = 0;
+
+    return pkt;
+}
+
+hiwi_pkt_ptr query_failed_logins() {
+    hiwi_pkt_ptr pkt;
+
+    pkt = malloc(4);
+
+    pkt->start = HIWI_FRAME_START;
+    pkt->stop = HIWI_FRAME_END;
+    pkt->headers |= HIWI_FAILED_LOGINS_OPCODE;
+    pkt->headers |= HIWI_QUERY_MT;
+    pkt->headers |= 0;
+    pkt->data = 0;
+
+    return pkt;
+}
