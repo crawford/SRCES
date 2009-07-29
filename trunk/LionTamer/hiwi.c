@@ -17,6 +17,7 @@
 #define HIWI_FAILED_LOGINS_OPCODE 0x0300
 #define HIWI_INVALID_LOGIN_OPCODE 0x0400
 
+/* Frees up the hiwi_pkt_ptr structure */
 void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt) {
     if (pkt->data == 0) {
         free(pkt);
@@ -26,13 +27,20 @@ void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt) {
     }
 }
 
+hiwi_pkt_ptr init_pkt(hiwi_pkt_ptr pkt) {
+    pkt->start = HIWI_FRAME_START;
+    pkt->stop = HIWI_FRAME_END;
+
+    return pkt;
+}
+
+/* This section constructs all the different query packets */
 hiwi_pkt_ptr query_locked_state() {
     hiwi_pkt_ptr pkt;
 
     pkt = malloc(4);
+    pkt = init_pkt(pkt);
 
-    pkt->start = HIWI_FRAME_START;
-    pkt->stop = HIWI_FRAME_END;
     pkt->headers |= HIWI_LOCKED_OPCODE;
     pkt->headers |= HIWI_QUERY_MT;
     pkt->headers |= 0;
@@ -45,9 +53,8 @@ hiwi_pkt_ptr query_priv_state() {
     hiwi_pkt_ptr pkt;
 
     pkt = malloc(4);
+    pkt = init_pkt(pkt);
 
-    pkt->start = HIWI_FRAME_START;
-    pkt->stop = HIWI_FRAME_END;
     pkt->headers |= HIWI_PRIVACY_OPCODE;
     pkt->headers |= HIWI_QUERY_MT;
     pkt->headers |= 0;
@@ -60,9 +67,8 @@ hiwi_pkt_ptr query_1wire_state() {
     hiwi_pkt_ptr pkt;
 
     pkt = malloc(4);
+    pkt = init_pkt(pkt);
 
-    pkt->start = HIWI_FRAME_START;
-    pkt->stop = HIWI_FRAME_END;
     pkt->headers |= HIWI_1_WIRE_OPCODE;
     pkt->headers |= HIWI_QUERY_MT;
     pkt->headers |= 0;
@@ -75,13 +81,58 @@ hiwi_pkt_ptr query_failed_logins() {
     hiwi_pkt_ptr pkt;
 
     pkt = malloc(4);
+    pkt = init_pkt(pkt);
 
-    pkt->start = HIWI_FRAME_START;
-    pkt->stop = HIWI_FRAME_END;
     pkt->headers |= HIWI_FAILED_LOGINS_OPCODE;
     pkt->headers |= HIWI_QUERY_MT;
     pkt->headers |= 0;
     pkt->data = 0;
+
+    return pkt;
+}
+
+/* This section constructs all the different command packets */
+hiwi_pkt_ptr set_lock_state(char state) {
+    hiwi_pkt_ptr pkt;
+
+    pkt = malloc(5);
+    pkt = init_pkt(pkt);
+
+    pkt->headers |= HIWI_LOCKED_OPCODE;
+    pkt->headers |= HIWI_COMMAND_MT;
+    pkt->data = malloc(1);
+    *pkt->data = state;
+    pkt->headers |= sizeof pkt->data;
+
+    return pkt;
+}
+
+hiwi_pkt_ptr set_priv_state(char state) {
+    hiwi_pkt_ptr pkt;
+
+    pkt = malloc(5);
+    pkt = init_pkt(pkt);
+
+    pkt->headers |= HIWI_PRIVACY_OPCODE;
+    pkt->headers |= HIWI_COMMAND_MT;
+    pkt->data = malloc(1);
+    *pkt->data = state;
+    pkt->headers |= sizeof pkt->data;
+
+    return pkt;
+}
+
+hiwi_pkt_ptr set_1wire_state(char state) {
+    hiwi_pkt_ptr pkt;
+
+    pkt = malloc(5);
+    pkt = init_pkt(pkt);
+
+    pkt->headers |= HIWI_1_WIRE_OPCODE;
+    pkt->headers |= HIWI_COMMAND_MT;
+    pkt->data = malloc(1);
+    *pkt->data = state;
+    pkt->headers |= sizeof pkt->data;
 
     return pkt;
 }

@@ -1,3 +1,10 @@
+#define DR_UNLOCK 0x00
+#define DR_LOCK 0x01
+#define DR_PUBLIC 0x00
+#define DR_PRIVATE 0x01
+#define DR_1WIRE_DISABLE 0x00
+#define DR_1WIRE_ENABLE 0x01
+
 struct hiwi_pkt_s {
     unsigned char start;
     unsigned short headers;
