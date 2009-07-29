@@ -1,16 +1,17 @@
 CC=gcc
-CFLAGS=-Wall -L.
-all : libserial.a
-	${CC} ${CFLAGS} serial.c -lserial -o serial
-	${CC} ${CFLAGS} network.c -lserial -o network
+CFLAGS=-Wall -L. -g
+all : libs
+	${CC} ${CFLAGS} serial.c -lhiwi -o serial
+	${CC} ${CFLAGS} network.c -lhiwi -o network
+	${CC} ${CFLAGS} test.c -lhiwi -o test
 
-libserial.o : 
-	${CC} ${CFLAGS} -c libserial.c
+libhiwi.o : 
+	${CC} ${CFLAGS} -c hiwi.c -o libhiwi.o
 
-libserial.a : libserial.o
-	ar cr libserial.a libserial.o
+libhiwi.a : libhiwi.o
+	ar cr libhiwi.a libhiwi.o
 
-libs : libserial.a
+libs : libhiwi.a
 
 clean:
-	rm *.o *.a network serial
+	rm *.o *.a network serial test

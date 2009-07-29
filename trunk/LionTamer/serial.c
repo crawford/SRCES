@@ -1,5 +1,9 @@
+/* This handles sending of data over the serial port to TicketBooth. It uses
+ * libhiwi to package and process all the data, and then sends it over the
+ * serial port. It communicates with network.c by opening another socket and
+ * receiving and sending instruction through it
+ */
 #include "hiwi.h"
-#include "serial.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -8,9 +12,7 @@
 #include <unistd.h>
 
 // Opens the serial port, and then returns the file descriptor
-// Also hands the file descriptor to the library
-// Then again, at this point I dunno if I need to
-int open_port() {
+int open_serial_port() {
     int fd;
 
     fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
@@ -19,11 +21,6 @@ int open_port() {
         perror("open_port: Unable to open /dev/ttyS0");
     } else {
         printf("Port: totally open!\n");
-    }
-
-    // Hand it to the library
-    if (set_file_descriptor(fd) != fd) {
-        perror("open_port: Unable to pass proper file descriptor to libserial");
     }
 
     return fd;
@@ -43,10 +40,8 @@ void configure_port(int fd) {
 }
 
 int main() {
-    int fd;
-    static int state;
-    fd = open_port();
-    configure_port(fd);
-    state = query_state();
+    int serial_fd;
+    serial_fd = open_serial_port();
+    configure_port(serial_fd);
     return 0;
 }
