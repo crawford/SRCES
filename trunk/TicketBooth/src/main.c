@@ -17,7 +17,7 @@ unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
 	_asm bcf PORTC, ONEWIRE _endasm;
 #define ONEWIRE_RELEASE _asm bsf TRISC, ONEWIRE _endasm;
 #define ONEWIRE_INPUTMASK 1 << ONEWIRE
-#define IBUTTON_FAMILYCODE 0x01
+#define IBUTTON_FAMILYCODE 0x02
 /*#define WAIT_5US(x) \
 	_asm MOVLW x _endasm; \
 	_asm MOVWF _delay _endasm; \
@@ -26,8 +26,7 @@ unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
 	_asm DECFSZ _delay,1 _endasm; \
 	_asm GOTO $-3 _endasm;*/
 #define WAIT_5US(x) \
-	_asm MOVLW x _endasm; \
-	_asm MOVWF _delay _endasm; \
+	delay = x; \
 	_asm CALL _DELAY_5US _endasm;
 
 void initialize();
@@ -63,15 +62,17 @@ char main() {
 			if(PORTC & ONEWIRE_INPUTMASK) {
 				sendString("iButton Found!   ");
 
-				readIButtonID();
-				sendChar(id[0]);
-				sendChar(id[1]);
-				sendChar(id[2]);
-				sendChar(id[3]);
-				sendChar(id[4]);
-				sendChar(id[5]);
-				sendChar(id[6]);
-				sendChar(id[7]);
+				if(readIButtonID()) {
+					sendChar(id[0]);
+					sendChar(id[1]);
+					sendChar(id[2]);
+					sendChar(id[3]);
+					sendChar(id[4]);
+					sendChar(id[5]);
+					sendChar(id[6]);
+					sendChar(id[7]);
+
+				}
 
 				sendString("\n\r");
 			}
@@ -133,18 +134,18 @@ void writeByte(char c) {
 
 	_asm
 		_TXLP:
-			bcf 	TRISC,ONEWIRE
-			bcf 	PORTC,ONEWIRE			; Pull down the bus
+			BCF		TRISC,ONEWIRE
+			BCF 	PORTC,ONEWIRE			; Pull down the bus
 			NOP
 			NOP
 			NOP								; Wait 3us
 			RRF 	_iobyte,F
 			BTFSC 	STATUS,0				; Check the lsb of iobyte
-			bsf 	TRISC,ONEWIRE			; Release the bus
+			BSF 	TRISC,ONEWIRE			; Release the bus
 			MOVLW 	0x0C
 			MOVWF 	_delay
 			CALL 	_DELAY_5US				; Wait 60us
-			bsf 	TRISC,ONEWIRE			; Release the bus
+			BSF 	TRISC,ONEWIRE			; Release the bus
 			NOP
 			NOP
 			DECFSZ	_count,F
@@ -159,15 +160,15 @@ char readByte() {
 		MOVLW	0x08
 		MOVWF	_count
 		_RXLP:
-			bcf 	TRISC,ONEWIRE
-			bcf 	PORTC,ONEWIRE			; Pull down the bus
+			BCF 	TRISC,ONEWIRE
+			BCF 	PORTC,ONEWIRE			; Pull down the bus
 			NOP
 			NOP
 			NOP
 			NOP
 			NOP
 			NOP								; Wait 6us
-			bsf 	TRISC,ONEWIRE			; Release the bus
+			BSF 	TRISC,ONEWIRE			; Release the bus
 			NOP
 			NOP
 			NOP
@@ -188,22 +189,23 @@ char readByte() {
 }
 
 char readIButtonID() {
-	char i = 8;
+	char i;
 
 	//Send read-rom command
 	writeByte(0x33);
 
 	//Read the 8 byte iButton address
-	do {
-		i--;
+	for(i = 0; i < 8; i++) {
 		id[i] = readByte();
-	} while(i);
+	}
 
 	//Verify the family code
 	if(id[0] != IBUTTON_FAMILYCODE)
 		return 0;
 
 	//Verify the checksum
+	i = 0;
+	
 
 	return 1;
 }
