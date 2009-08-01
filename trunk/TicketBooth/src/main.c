@@ -38,6 +38,7 @@ char delay;
 char iobyte;
 char count;
 char id[8];
+char crc;
 
 /*
  * Main Function
@@ -177,7 +178,7 @@ char readByte() {
 			ANDLW 	ONEWIRE_INPUTMASK		; Mask off the ONEWIRE_IN bit
 			BCF		STATUS, 0
 			ADDLW	0xFF					; C = 1 if ONEWIRE_IN = 1: C = 0 if ONEWIRE_IN = 0
-			RRF		_iobyte,1				; Shift C into IOBYTE
+			RRF		_iobyte,F				; Shift C into IOBYTE
 			MOVLW 	0x0A
 			MOVWF 	_delay
 			CALL 	_DELAY_5US				; Wait 50us to end of time slot
@@ -190,6 +191,7 @@ char readByte() {
 
 char readIButtonID() {
 	char i;
+	char temp;
 
 	//Send read-rom command
 	writeByte(0x33);
@@ -204,8 +206,28 @@ char readIButtonID() {
 		return 0;
 
 	//Verify the checksum
-	i = 0;
+	crc = 0;
+	for(i = 0; i < 7; i++) {
+		iobyte = id[i];
+
+		for(count = 0; count < 8; count++) {
+			iobyte >>= 1;
+			temp = STATUS;
+
+			_asm
+				BCF	STATUS,0
+				RRF _crc,F
+			_endasm;
+			
+			if((temp ^ STATUS) & 1) {
+				crc ^= 0x8C;
+			}
+			
+		}
+	}
 	
+	if(id[7] != crc)
+		return 0;
 
 	return 1;
 }
