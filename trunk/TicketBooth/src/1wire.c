@@ -1,6 +1,12 @@
 #include "1wire.h"
 #include <pic16f688.h>
 
+char crc;
+char delay;
+char iobyte;
+char count;
+char id[8];
+
 void DELAY_5US() {
 	_asm
 			NOP
@@ -112,3 +118,4 @@ char readIButtonID() {
 
 	return 1;
 }
+

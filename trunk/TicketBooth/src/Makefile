@@ -1,5 +1,5 @@
 ticketbooth: main.o 1wire.o serial.o
-	sdcc -mpic14 -p16f688 -V main.rel 1wire.rel serial.rel
+	sdcc -mpic14 -p16f688 -V main.o 1wire.o serial.o
 	cp main.hex ../release/ticketbooth.hex
 
 main.o: main.c
@@ -14,7 +14,7 @@ serial.o: serial.c serial.h
 burn:
 	piklab-prog -c program -d 16f688 -p icd2 -t usb main.hex -f --target-self-powered true
 
-full: main burn
+full: ticketbooth burn
 
 clean:
 	rm -f main.asm
@@ -32,3 +32,4 @@ clean:
 	rm -f serial.hex
 	rm -f serial.lst
 	rm -f serial.o
+

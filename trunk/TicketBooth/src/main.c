@@ -15,6 +15,8 @@ unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
 
 void initialize();
 
+extern char delay;
+extern char id[8];
 
 /*
  * Main Function

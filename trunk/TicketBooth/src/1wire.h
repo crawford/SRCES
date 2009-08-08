@@ -19,8 +19,3 @@
 extern char readIButtonID();
 extern void DELAY_5US();
 
-char crc;
-char delay;
-char iobyte;
-char count;
-char id[8];
