@@ -1,6 +1,8 @@
 #include <pic16f688.h>
 #include "1wire.h"
 #include "serial.h"
+#include "delay.h"
+#include "servo.h"
 
 // Configuration bits:
 unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
@@ -14,9 +16,6 @@ unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
 								_FCMEN_ON;
 
 void initialize();
-
-extern char delay;
-extern char id[8];
 
 /*
  * Main Function

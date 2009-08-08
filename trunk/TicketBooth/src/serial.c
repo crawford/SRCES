@@ -1,5 +1,5 @@
-#include "serial.h"
 #include <pic16f688.h>
+#include "serial.h"
 
 void clear_usart_errors_inline() {
 	if (OERR) {

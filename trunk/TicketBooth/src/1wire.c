@@ -1,20 +1,11 @@
-#include "1wire.h"
 #include <pic16f688.h>
+#include "1wire.h"
+#include "delay.h"
 
 char crc;
-char delay;
 char iobyte;
 char count;
 char id[8];
-
-void DELAY_5US() {
-	_asm
-			NOP
-			NOP
-			DECFSZ _delay,1
-			GOTO _DELAY_5US
-	_endasm;
-}
 
 void writeByte(char c) {
 	count = 8;
