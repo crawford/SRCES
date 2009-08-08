@@ -1,4 +1,6 @@
 #include <pic16f688.h>
+#include "1wire.h"
+#include "serial.h"
 
 // Configuration bits:
 unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
@@ -11,34 +13,8 @@ unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
 								_IESO_ON & \
 								_FCMEN_ON;
 
-#define ONEWIRE 0
-#define ONEWIRE_PULLDOWN \
-	_asm bcf TRISC, ONEWIRE _endasm; \
-	_asm bcf PORTC, ONEWIRE _endasm;
-#define ONEWIRE_RELEASE _asm bsf TRISC, ONEWIRE _endasm;
-#define ONEWIRE_INPUTMASK 1 << ONEWIRE
-#define IBUTTON_FAMILYCODE 0x02
-/*#define WAIT_5US(x) \
-	_asm MOVLW x _endasm; \
-	_asm MOVWF _delay _endasm; \
-	_asm NOP _endasm; \
-	_asm NOP _endasm; \
-	_asm DECFSZ _delay,1 _endasm; \
-	_asm GOTO $-3 _endasm;*/
-#define WAIT_5US(x) \
-	delay = x; \
-	_asm CALL _DELAY_5US _endasm;
-
 void initialize();
-void sendString(const char*);
-void sendChar(unsigned char);
-char readIButtonID();
 
-char delay;
-char iobyte;
-char count;
-char id[8];
-char crc;
 
 /*
  * Main Function
@@ -56,11 +32,11 @@ char main() {
 		ONEWIRE_RELEASE
 		WAIT_5US(0x0E)
 	
-		if(!(PORTC & ONEWIRE_INPUTMASK)) {
+		if(!(PORTA & ONEWIRE_INPUTMASK)) {
 			//If the 1-wire bus is low (iButton is present)
 			WAIT_5US(0x56)	//Wait 430us
 	
-			if(PORTC & ONEWIRE_INPUTMASK) {
+			if(PORTA & ONEWIRE_INPUTMASK) {
 				sendString("iButton Found!   ");
 
 				if(readIButtonID()) {
@@ -83,154 +59,7 @@ char main() {
 	}
 }
 
-/*
- * Serial Communication Functions
- */
 
-void clear_usart_errors_inline() {
-	if (OERR) {
-		TXEN = 0;
-		TXEN = 1;
-		CREN = 0;
-		CREN = 1;
-	}
-	if (FERR) {
-		//dummy = RCREG;
-		TXEN = 0;
-		TXEN = 1;
-	}
-}
-
-void sendChar(unsigned char c) {
-	while(!TXIF) {		//set when register is empty
-		clear_usart_errors_inline();
-		//clrwdt();
-	}
-	TXREG = c;
-}
-
-void sendString(const char *str) {
-	while(*str) {
-		sendChar(*str);
-		str++;
-	}
-}
-
-/*
- * 1-Wire Functions
- */
-
-void DELAY_5US() {
-	_asm
-			NOP
-			NOP
-			DECFSZ _delay,1
-			GOTO _DELAY_5US
-	_endasm;
-}
-
-void writeByte(char c) {
-	count = 8;
-	iobyte = c;
-
-	_asm
-		_TXLP:
-			BCF		TRISC,ONEWIRE
-			BCF 	PORTC,ONEWIRE			; Pull down the bus
-			NOP
-			NOP
-			NOP								; Wait 3us
-			RRF 	_iobyte,F
-			BTFSC 	STATUS,0				; Check the lsb of iobyte
-			BSF 	TRISC,ONEWIRE			; Release the bus
-			MOVLW 	0x0C
-			MOVWF 	_delay
-			CALL 	_DELAY_5US				; Wait 60us
-			BSF 	TRISC,ONEWIRE			; Release the bus
-			NOP
-			NOP
-			DECFSZ	_count,F
-			GOTO 	_TXLP
-	_endasm;	
-}
-
-char readByte() {
-	_asm
-		MOVLW	0x00
-		MOVWF	_iobyte
-		MOVLW	0x08
-		MOVWF	_count
-		_RXLP:
-			BCF 	TRISC,ONEWIRE
-			BCF 	PORTC,ONEWIRE			; Pull down the bus
-			NOP
-			NOP
-			NOP
-			NOP
-			NOP
-			NOP								; Wait 6us
-			BSF 	TRISC,ONEWIRE			; Release the bus
-			NOP
-			NOP
-			NOP
-			NOP								; Wait 4us
-			MOVF 	PORTC,W
-			ANDLW 	ONEWIRE_INPUTMASK		; Mask off the ONEWIRE_IN bit
-			BCF		STATUS, 0
-			ADDLW	0xFF					; C = 1 if ONEWIRE_IN = 1: C = 0 if ONEWIRE_IN = 0
-			RRF		_iobyte,F				; Shift C into IOBYTE
-			MOVLW 	0x0A
-			MOVWF 	_delay
-			CALL 	_DELAY_5US				; Wait 50us to end of time slot
-			DECFSZ	_count,F				; Decrement the bit counter
-			GOTO	_RXLP
-	_endasm;
-
-	return iobyte;
-}
-
-char readIButtonID() {
-	char i;
-	char temp;
-
-	//Send read-rom command
-	writeByte(0x33);
-
-	//Read the 8 byte iButton address
-	for(i = 0; i < 8; i++) {
-		id[i] = readByte();
-	}
-
-	//Verify the family code
-	if(id[0] != IBUTTON_FAMILYCODE)
-		return 0;
-
-	//Verify the checksum
-	crc = 0;
-	for(i = 0; i < 7; i++) {
-		iobyte = id[i];
-
-		for(count = 0; count < 8; count++) {
-			iobyte >>= 1;
-			temp = STATUS;
-
-			_asm
-				BCF	STATUS,0
-				RRF _crc,F
-			_endasm;
-			
-			if((temp ^ STATUS) & 1) {
-				crc ^= 0x8C;
-			}
-			
-		}
-	}
-	
-	if(id[7] != crc)
-		return 0;
-
-	return 1;
-}
 
 /*
  * Initialization Functions
