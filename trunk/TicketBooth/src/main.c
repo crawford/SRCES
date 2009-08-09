@@ -17,12 +17,15 @@ unsigned int at 0x2007 CONFIG = _INTRC_OSC_NOCLKOUT & \
 
 void initialize();
 
+char locked;
+
 /*
  * Main Function
  */
 
 char main() {
 	initialize();
+	locked = 0;
 
 	while(1) {	
 		//Reset iButton (wait 500us)
@@ -53,10 +56,21 @@ char main() {
 				}
 
 				sendString("\n\r");
+
+				if(locked & 0x01) {
+					unlockDoor();
+					locked = 0;
+				} else {
+					lockDoor();
+					locked = 1;
+				}
 			}
 		}
 
-		WAIT_5US(0xFF)	//Wait 1.275ms
+		delay_ms(255);
+		delay_ms(255);
+		delay_ms(255);
+		delay_ms(255);
 	}
 }
 
@@ -69,7 +83,7 @@ char main() {
 void initialize() {
 	// Setup Ports
 	TRISA = 0x00;	//Set portA to be all ouput
-	TRISC = 0x02;	//Set portC to be all ouput except pin 0
+	TRISC = 0x00;	//Set portC to be all ouput except pin 0
 	PORTA = 0x00;
 	PORTC = 0x00;
 	
@@ -82,6 +96,10 @@ void initialize() {
 	
 	// Setup TMR0
 	T0CS = 0x00;	//Bind tmr0 clock to internal oscillator
+	PSA = 0x00;		//Assign prescaler to TMR0
+	PS2 = 0x00;		//Set prescaler to be 1:32
+	PS1 = 0x00;
+	PS0 = 0x01;	
 	
 	// Setup Main Clock
 	OSCCON = 0x60;	//Set internal oscillator to 4MHz
