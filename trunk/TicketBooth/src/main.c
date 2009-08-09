@@ -97,7 +97,7 @@ void initialize() {
 	// Setup TMR0
 	T0CS = 0x00;	//Bind tmr0 clock to internal oscillator
 	PSA = 0x00;		//Assign prescaler to TMR0
-	PS2 = 0x00;		//Set prescaler to be 1:32
+	PS2 = 0x00;		//Set prescaler to be 1:4
 	PS1 = 0x00;
 	PS0 = 0x01;	
 	

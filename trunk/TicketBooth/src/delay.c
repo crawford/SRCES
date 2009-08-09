@@ -14,8 +14,9 @@ void DELAY_5US() {
 
 void delay_ms(char amt) {
 	while(amt) {
-		TMR0 = 0x06;	//Set the timer to be 250 away from overflowing
-		while(TMR0);
+		/*TMR0 = 0x06;	//Set the timer to be 250 away from overflowing
+		while(TMR0);*/
+		WAIT_5US(0xC8)
 		amt--;
 	}
 }
