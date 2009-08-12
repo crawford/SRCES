@@ -2,29 +2,29 @@
 #include "1wire.h"
 #include "delay.h"
 
-char crc;
-char iobyte;
-char count;
-char id[8];
+unsigned char crc;
+unsigned char iobyte;
+unsigned char count;
+unsigned char id[8];
 
-void writeByte(char c) {
+void writeByte(unsigned char c) {
 	count = 8;
 	iobyte = c;
 
 	_asm
 		_TXLP:
-			BCF		TRISA,ONEWIRE
-			BCF 	PORTA,ONEWIRE			; Pull down the bus
+			BCF		TRISA,ONEWIRE_PIN
+			BCF 	PORTA,ONEWIRE_PIN		; Pull down the bus
 			NOP
 			NOP
 			NOP								; Wait 3us
 			RRF 	_iobyte,F
 			BTFSC 	STATUS,0				; Check the lsb of iobyte
-			BSF 	TRISA,ONEWIRE			; Release the bus
+			BSF 	TRISA,ONEWIRE_PIN		; Release the bus
 			MOVLW 	0x0C
 			MOVWF 	_delay
 			CALL 	_DELAY_5US				; Wait 60us
-			BSF 	TRISA,ONEWIRE			; Release the bus
+			BSF 	TRISA,ONEWIRE_PIN		; Release the bus
 			NOP
 			NOP
 			DECFSZ	_count,F
@@ -32,28 +32,28 @@ void writeByte(char c) {
 	_endasm;	
 }
 
-char readByte() {
+unsigned char readByte() {
 	_asm
 		MOVLW	0x00
 		MOVWF	_iobyte
 		MOVLW	0x08
 		MOVWF	_count
 		_RXLP:
-			BCF 	TRISA,ONEWIRE
-			BCF 	PORTA,ONEWIRE			; Pull down the bus
+			BCF 	TRISA,ONEWIRE_PIN
+			BCF 	PORTA,ONEWIRE_PIN		; Pull down the bus
 			NOP
 			NOP
 			NOP
 			NOP
 			NOP
 			NOP								; Wait 6us
-			BSF 	TRISA,ONEWIRE			; Release the bus
+			BSF 	TRISA,ONEWIRE_PIN		; Release the bus
 			NOP
 			NOP
 			NOP
 			NOP								; Wait 4us
 			MOVF 	PORTA,W
-			ANDLW 	ONEWIRE_INPUTMASK		; Mask off the ONEWIRE_IN bit
+			ANDLW 	ONEWIRE_MASK			; Mask off the ONEWIRE_IN bit
 			BCF		STATUS, 0
 			ADDLW	0xFF					; C = 1 if ONEWIRE_IN = 1: C = 0 if ONEWIRE_IN = 0
 			RRF		_iobyte,F				; Shift C into IOBYTE
@@ -67,9 +67,9 @@ char readByte() {
 	return iobyte;
 }
 
-char readIButtonID() {
-	char i;
-	char temp;
+unsigned char readIButtonID() {
+	unsigned char i;
+	unsigned char temp;
 
 	//Send read-rom command
 	writeByte(0x33);

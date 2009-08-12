@@ -8,8 +8,8 @@
 #define SERVO_HIGH _asm bsf PORTC, SERVO_PIN _endasm;
 #define SERVO_LOW _asm bcf PORTC, SERVO_PIN _endasm;
 
-void moveMotor(char pos) {
-	char time = MOVETIME;
+void moveMotor(unsigned char pos) {
+	unsigned char time = MOVETIME;
 	while(time) {
 		SERVO_HIGH
 		delay_100us(pos);
