@@ -5,11 +5,11 @@
 #include "servo.h"
 
 // Pin Definitions
-#define LED_INSIDE_PIN 2
-#define LED_INSIDE_PORT PORTA
-#define LED_OUTSIDE_PIN 3
+#define LED_INSIDE_PIN 1
+#define LED_INSIDE_PORT PORTC
+#define LED_OUTSIDE_PIN 2
 #define LED_OUTSIDE_PORT PORTC
-#define BUTTON_PIN 1
+#define BUTTON_PIN 2
 
 // Macro Definitions
 #define SLEEP() _asm SLEEP _endasm
@@ -56,30 +56,32 @@ unsigned char main() {
 	private = FALSE;
 
 	ONEWIRE_RELEASE();
+	ONEWIRE_POWER_ON();
 
 	while(1) {
-		sendString("Sleeping...\n\r");		
+		sendString("Sleeping...\n\r");
 		SLEEP();
 	}
 }
 
 void initialize() {
 	// Setup Ports
-	TRISA = BUTTON_MASK | ONEWIRE_IOC_MASK;// | ONEWIRE_MASK;
-	TRISC = 0x20;			//Set portC to be all ouput except RC5 (Rx)
+	TRISA = BUTTON_MASK;		//Set PORTA to read the button pin
+	TRISA |= ONEWIRE_IOC_MASK;	//Set PORTA to read the ibutton ioc pin
+	TRISC = 0x20;				//Set portC to be all ouput except RC5 (Rx)
 	PORTA = 0x00;
 	PORTC = 0x00;
 	LED_INSIDE_OFF();
 	LED_OUTSIDE_OFF();
 
 	// Setup Analog Inputs
-	ANSEL = 0x00;	//Disable A/D convertors
-	CMCON0 = 0x07;	//Disable comparators
+	ANSEL = 0x00;				//Disable A/D convertors
+	CMCON0 = 0x07;				//Disable comparators
 
 	// Setup Pull-Up Resistors
-	NOT_RAPU = 0;      		//Clear the PORTA Pull-up Enable bit (active low)
-	WPUA = 0x00;			//Disable all pullups
-	WPUA |= BUTTON_MASK;	//Enable pullup for button
+	NOT_RAPU = 0;      			//Enable the PORTA Pull-up
+	WPUA = 0x00;				//Disable all pullups
+	WPUA |= BUTTON_MASK;		//Enable pullup for button
 
 	// Setup IOC
 	GIE = 1;					//Enable Global Interrupt Enable bit
@@ -90,28 +92,28 @@ void initialize() {
 	RAIE = 1;					//PORTA Change Interrupt Enable bit
 
 	// Setup TMR0
-	/*T0CS = 0x00;	//Bind tmr0 clock to internal oscillator
-	PSA = 0x00;		//Assign prescaler to TMR0
-	PS2 = 0x00;		//Set prescaler to be 1:4
+	/*T0CS = 0x00;				//Bind tmr0 clock to internal oscillator
+	PSA = 0x00;					//Assign prescaler to TMR0
+	PS2 = 0x00;					//Set prescaler to be 1:4
 	PS1 = 0x00;
 	PS0 = 0x01;*/
 
 	// Setup Main Clock
-	OSCCON = 0x60;	//Set internal oscillator to 4MHz
+	OSCCON = 0x60;				//Set internal oscillator to 4MHz
 
 	// Setup Serial Communications
-	SPBRG = 0x19;	//(PIC_CLK/(16 * BAUD) - 1)
-	BRGH = 0x01;	//data rate for sending
-	SYNC = 0x00;	//asynchronous
-	SPEN = 0x01;	//enable serial port pins
-	CREN = 0x01;	//enable reception
-	SREN = 0x00;	//no effect
-	TXIE = 0x00;	//disable tx interrupts
-	RCIE = 0x00;	//disable rx interrupts
-	TX9 = 0x00;		//8-bit transmission
-	RX9 = 0x00;		//8-bit reception
-	TXEN = 0x00;	//reset transmitter
-	TXEN = 0x01;	//enable the transmitter
+	SPBRG = 0x19;				//(PIC_CLK/(16 * BAUD) - 1)
+	BRGH = 0x01;				//data rate for sending
+	SYNC = 0x00;				//asynchronous
+	SPEN = 0x01;				//enable serial port pins
+	CREN = 0x01;				//enable reception
+	SREN = 0x00;				//no effect
+	TXIE = 0x00;				//disable tx interrupts
+	RCIE = 0x00;				//disable rx interrupts
+	TX9 = 0x00;					//8-bit transmission
+	RX9 = 0x00;					//8-bit reception
+	TXEN = 0x00;				//reset transmitter
+	TXEN = 0x01;				//enable the transmitter
 }
 
 void portChanged() __interrupt 0 {
@@ -177,7 +179,8 @@ void handleOneWire() {
 		ONEWIRE_PULLDOWN();
 		WAIT_5US(0x64);
 
-		//wait for line to return to high (70us) and iButon to trigger presence pulse
+		//wait for line to return to high (70us)
+		// and iButon to trigger presence pulse
 		ONEWIRE_RELEASE();
 		WAIT_5US(0x0E);
 

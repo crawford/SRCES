@@ -79,10 +79,6 @@ unsigned char readIButtonID() {
 		id[i] = readByte();
 	}
 
-	//Verify the family code
-	if(id[0] != IBUTTON_FAMILYCODE)
-		return 0;
-
 	//Verify the checksum
 	crc = 0;
 	for(i = 0; i < 7; i++) {
