@@ -16,7 +16,7 @@ void delay_ms(unsigned char amt) {
 	while(amt) {
 		/*TMR0 = 0x06;	//Set the timer to be 250 away from overflowing
 		while(TMR0);*/
-		WAIT_5US(0xC8)
+		WAIT_5US(0xC8);
 		amt--;
 	}
 }
@@ -25,7 +25,7 @@ void delay_100us(unsigned char amt) {
 	while(amt) {
 		/*TMR0 = 0xE7;	//Set the timer to be 25 away from overflowing
 		while(TMR0);*/
-		WAIT_5US(0x14)
+		WAIT_5US(0x14);
 		amt--;
 	}
 }

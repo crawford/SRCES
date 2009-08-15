@@ -2,7 +2,7 @@ ticketbooth: main.o 1wire.o serial.o delay.o servo.o
 	sdcc -mpic14 -p16f688 -V main.o 1wire.o serial.o delay.o servo.o
 	cp main.hex ../release/ticketbooth.hex
 
-main.o: main.c
+main.o: main.c 1wire.h serial.h delay.h servo.h
 	sdcc -c -mpic14 -p16f688 -V main.c
 
 1wire.o: 1wire.c 1wire.h
