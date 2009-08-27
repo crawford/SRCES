@@ -5,7 +5,7 @@
 unsigned char crc;
 unsigned char iobyte;
 unsigned char count;
-unsigned char id[8];
+unsigned char id[9];
 
 void writeByte(unsigned char c) {
 	count = 8;
@@ -99,6 +99,7 @@ unsigned char readIButtonID() {
 			
 		}
 	}
+	id[8] = 0;
 	
 	if(id[7] != crc)
 		return 0;

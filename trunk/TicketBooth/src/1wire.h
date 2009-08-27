@@ -14,5 +14,5 @@
 #define ONEWIRE_POWER_OFF() _asm bcf PORTC, ONEWIRE_POWER_PIN _endasm
 
 extern unsigned char readIButtonID();
-extern unsigned char id[8];
+extern unsigned char id[9];
 

@@ -191,14 +191,7 @@ void handleOneWire() {
 			if(ONEWIRE_HIGH) {
 				if(readIButtonID()) {
 					sendString("iButton: ");
-					sendChar(id[0]);
-					sendChar(id[1]);
-					sendChar(id[2]);
-					sendChar(id[3]);
-					sendChar(id[4]);
-					sendChar(id[5]);
-					sendChar(id[6]);
-					sendChar(id[7]);
+					sendString(id);
 					sendString("\n\r");
 
 					toggleLock();
