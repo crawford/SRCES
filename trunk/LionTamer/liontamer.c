@@ -43,5 +43,10 @@ int main() {
     int serial_fd;
     serial_fd = open_serial_port();
     configure_port(serial_fd);
+
+    while (1) {
+        // Listen loop
+    }
+
     return 0;
 }
