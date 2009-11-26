@@ -11,16 +11,16 @@
 #include <termio.h>
 #include <unistd.h>
 
+#define LT_SERIAL_PORT "/dev/ttyS0"
+
 // Opens the serial port, and then returns the file descriptor
 int open_serial_port() {
     int fd;
 
-    fd = open("/dev/ttyS0", O_RDWR | O_NOCTTY);
+    fd = open(LT_SERIAL_PORT, O_RDWR | O_NOCTTY);
 
     if (fd == -1) {
         perror("open_port: Unable to open /dev/ttyS0");
-    } else {
-        printf("Port: totally open!\n");
     }
 
     return fd;

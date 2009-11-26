@@ -1,8 +1,7 @@
 CC=gcc
 CFLAGS=-Wall -L. -g
 all : libs
-	${CC} ${CFLAGS} serial.c -lhiwi -o serial
-	${CC} ${CFLAGS} network.c -lhiwi -o network
+	${CC} ${CFLAGS} liontamer.c -lhiwi -o liontamer
 	${CC} ${CFLAGS} test.c -lhiwi -o test
 
 libhiwi.o : 
@@ -14,4 +13,4 @@ libhiwi.a : libhiwi.o
 libs : libhiwi.a
 
 clean:
-	rm *.o *.a network serial test
+	rm *.o *.a liontamer test
