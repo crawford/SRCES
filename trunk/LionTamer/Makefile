@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -L. -g
+CFLAGS=-Wall -L. -g 
 all : libs
 	${CC} ${CFLAGS} liontamer.c -lhiwi -o liontamer
 	${CC} ${CFLAGS} test.c -lhiwi -o test
