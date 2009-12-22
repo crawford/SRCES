@@ -7,57 +7,13 @@
 #include <unistd.h>
 #include "hiwi.h"
 
-int send_pkt(hiwi_pkt_ptr pkt, int sock) {
-    if (pkt->data == 0) {
-        char pkt_c[4];
-        pkt_c[0] = pkt->start;
-        pkt_c[1] = (pkt->headers & 0xFF00) >> 8;
-        pkt_c[2] = pkt->headers & 0x00FF;
-        pkt_c[3] = pkt->stop;
-
-        send(sock, pkt_c, sizeof pkt_c, 0);
-
-        free_hiwi_pkt_ptr(pkt);
-
-        return 0;
-    } else if (strlen(pkt->data) > 0) {
-        char pkt_c[4 + strlen(pkt->data)];
-        pkt_c[0] = pkt->start;
-        pkt_c[1] = (pkt->headers & 0xFF00) >> 8;
-        pkt_c[2] = pkt->headers & 0x00FF;
-        strcpy(pkt_c + 3, pkt->data);
-        pkt_c[4 + strlen(pkt->data) - 1] = pkt->stop;
-
-        send(sock, pkt_c, sizeof pkt_c, 0);
-
-        free_hiwi_pkt_ptr(pkt);
-
-        return 0;
-    } else {
-        char pkt_c[5];
-        pkt_c[0] = pkt->start;
-        pkt_c[1] = (pkt->headers & 0xFF00) >> 8;
-        pkt_c[2] = pkt->headers & 0x00FF;
-        printf("%d\n", *(pkt->data));
-        pkt_c[3] = *(pkt->data);
-        pkt_c[4] = pkt->stop;
-        
-        send(sock, pkt_c, sizeof pkt_c, 0);
-
-        free_hiwi_pkt_ptr(pkt);
-
-        return 0;
-    }
-
-    return -1;
-}
-
 int main() {
     int status, sock;
     struct addrinfo hints, *res, *cur;
     hiwi_pkt_ptr pkt;
 
-    pkt = query_locked_state();
+    pkt = set_lock_state('g');
+    //pkt = query_lock_state();
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -72,20 +28,23 @@ int main() {
     for (cur = res; cur != NULL; cur = cur->ai_next) {
         if ((sock = socket(cur->ai_family, cur->ai_socktype, cur->ai_protocol)) == -1)
         {
-            perror("socket fail");
+            perror("socket: Could not open socket");
             continue;
         }
 
         if (connect(sock, cur->ai_addr, cur->ai_addrlen) == -1) {
-            perror("connect");
+            perror("connect: Could not connect on socket");
             continue;
         }
 
     }
 
-    send_pkt(pkt,sock);
+    if(send(sock, pkt, sizeof *pkt, 0) != 0) {
+        perror("send: Could not send packet");
+    }
 
     freeaddrinfo(res);
+    free(pkt);
 
     close(sock);
 
