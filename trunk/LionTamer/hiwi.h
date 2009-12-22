@@ -21,6 +21,11 @@ typedef struct hiwi_pkt_s * hiwi_pkt_ptr;
 void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt);
 
 hiwi_pkt_ptr query_lock_state();
+hiwi_pkt_ptr query_priv_state();
 hiwi_pkt_ptr set_lock_state(unsigned char state);
+
+char get_opcode(hiwi_pkt_ptr pkt);
+char get_message_type(hiwi_pkt_ptr pkt);
+int get_data(hiwi_pkt_ptr pkt, int* data);
 
 #endif

@@ -145,3 +145,34 @@ hiwi_pkt_ptr gen_response(unsigned char opcode, unsigned char response) {
 
     return pkt;
 }
+
+/* Packet tools */
+char get_opcode(hiwi_pkt_ptr pkt) {
+    char headers = pkt->headers;
+
+    headers &= 0x01;
+    return headers;
+}
+
+char get_message_type(hiwi_pkt_ptr pkt) {
+    char headers = pkt->headers;
+
+    headers >>= 4;
+    return headers;
+}
+
+/* returns 1 if no data, 0 if successful
+   sets data with packet data */
+int get_data(hiwi_pkt_ptr pkt, int* data) {
+    if (pkt->size == 0) {
+        *data = 255;
+
+        return 1;
+    } else {
+        /* As long as we're only sending small amounts
+        of data... */
+        *data = pkt->data;
+
+        return 0;
+    }
+}

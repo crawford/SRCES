@@ -15,7 +15,7 @@
 #include <termio.h>
 #include <unistd.h>
 
-#define LT_LISTEN_PORT "666"
+#define LT_LISTEN_PORT "6969"
 #define LT_MAX_CONNECTIONS 10
 #define LT_SERIAL_PORT "/dev/ttyS0"
 
