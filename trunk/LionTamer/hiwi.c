@@ -176,3 +176,7 @@ int get_data(hiwi_pkt_ptr pkt, int* data) {
         return 0;
     }
 }
+
+char get_size(hiwi_pkt_ptr pkt) {
+    return pkt->size;
+}

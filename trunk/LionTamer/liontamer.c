@@ -23,6 +23,7 @@
 int open_serial_port() {
     int fd;
 
+    // Also, this is really easy, davids
     fd = open(LT_SERIAL_PORT, O_RDWR | O_NOCTTY);
 
     if (fd == -1) {
@@ -82,6 +83,32 @@ int open_network_port() {
     return sock;
 }
 
+/* This returns some sort of error code. Values will be listed 
+ * eventually. Also, interface is an int. 0 is serial, 1 is network
+ * The first argument is the returned pkt, modified in place.
+ * The second is the packet it responds to.
+ */
+int handle_pkts(hiwi_pkt_ptr ret, const hiwi_pkt_ptr pkt, int interface) {
+    char mt = get_message_type(pkt);
+
+    switch (mt) {
+        case 0x0:
+            // Response handler
+            break;
+        case 0x1:
+            // Command handler
+            break;
+        case 0x2:
+            // Query handler
+            break;
+        case 0xf:
+            // Broadcast handler
+            break;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main() {
 
     fd_set fds;
@@ -127,8 +154,8 @@ int main() {
                 } else {
                     hiwi_pkt_ptr pkt = buf;
                 }
-                // Get out, we don't wanna loop in the child
-                break;
+
+                return EXIT_SUCCESS;
             } else if (fork_err == -1) {
                 perror("fork()");
             }
@@ -149,8 +176,8 @@ int main() {
                         // More handling code
                     }
                 }
-                // Get out, we don't wanna loop in the child
-                break;
+
+                return EXIT_SUCCESS;
             } else if (fork_err == -1) {
                 perror("fork()");
             }

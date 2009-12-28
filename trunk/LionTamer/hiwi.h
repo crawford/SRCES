@@ -22,10 +22,17 @@ void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt);
 
 hiwi_pkt_ptr query_lock_state();
 hiwi_pkt_ptr query_priv_state();
+hiwi_pkt_ptr query_1wire_state();
+hiwi_pkt_ptr query_failed_logins();
 hiwi_pkt_ptr set_lock_state(unsigned char state);
+hiwi_pkt_ptr set_priv_state(unsigned char state);
+hiwi_pkt_ptr set_1wire_state(unsigned char state);
+
+hiwi_pkt_ptr gen_response(unsigned char opcode, unsigned char response);
 
 char get_opcode(hiwi_pkt_ptr pkt);
 char get_message_type(hiwi_pkt_ptr pkt);
+char get_size(hiwi_pkt_ptr pkt);
 int get_data(hiwi_pkt_ptr pkt, int* data);
 
 #endif
