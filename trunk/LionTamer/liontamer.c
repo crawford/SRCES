@@ -20,13 +20,9 @@
 #define LT_MAX_CONNECTIONS 10
 #define LT_SERIAL_PORT "/dev/ttyS0"
 
-int priv_state;
-int lock_state;
-int wire_state;
-
-time_t priv_time;
-time_t lock_time;
-time_t wire_time;
+static char response_flag = 0;
+int lock_state, priv_state, wire_state;
+time_t lock_time, priv_time, wire_time;
 
 // Opens the serial port, and then returns the file descriptor
 int open_serial_port() {
@@ -122,6 +118,40 @@ void update_states(const hiwi_pkt_ptr pkt) {
     }
 }
 
+// Response handler - forward if needed
+int response_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    size_t sent, size;
+
+    // Update states in both cases, only send if response needed
+    switch (response_flag) {
+        case 1:
+            do {
+                size = sizeof *pkt;
+                sent = send(out_interface, pkt, size, 0);
+            } while (sent != size);
+            response_flag = 0;
+        case 0:
+            update_states(pkt);
+    }
+
+    return EXIT_SUCCESS;
+}
+
+// Command handler - always forward
+int command_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    // We're gonna need to forward a response
+    response_flag = 1;
+
+    return EXIT_SUCCESS;
+}
+
+// Query handler - always forward
+int query_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    // We're gonna need to forward a response
+    response_flag = 1;
+
+    return EXIT_SUCCESS;
+}
 
 // Broadcast handler - forward all broadcast packets on the opposite iface
 int broadcast_handler(const hiwi_pkt_ptr pkt, int out_interface) {
@@ -136,18 +166,16 @@ int broadcast_handler(const hiwi_pkt_ptr pkt, int out_interface) {
     return EXIT_SUCCESS;
 }
 
-int handle_pkts(const hiwi_pkt_ptr pkt, int interface, int opp_interface) {
+int handle_pkts(const hiwi_pkt_ptr pkt, int opp_interface) {
+    char mt = get_message_type(pkt);
 
     switch (mt) {
         case 0x0:
-            // Response handler
-            break;
+            return response_handler(pkt, opp_interface);
         case 0x1:
-            // Command handler
-            break;
+            return command_handler(pkt, opp_interface);
         case 0x2:
-            // Query handler
-            break;
+            return query_handler(pkt, opp_interface);
         case 0xf:
             return broadcast_handler(pkt, opp_interface);
     }
