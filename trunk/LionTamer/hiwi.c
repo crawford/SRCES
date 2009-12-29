@@ -12,11 +12,6 @@
 #define HIWI_COMMAND_MT 0x10
 #define HIWI_QUERY_MT 0x20
 #define HIWI_BROADCAST_MT 0xF0
-#define HIWI_LOCKED_OPCODE 0x00
-#define HIWI_PRIVACY_OPCODE 0x01
-#define HIWI_1_WIRE_OPCODE 0x02
-#define HIWI_FAILED_LOGINS_OPCODE 0x03
-#define HIWI_INVALID_LOGIN_OPCODE 0x04
 
 /* Frees up the hiwi_pkt_ptr structure */
 void free_hiwi_pkt_ptr(hiwi_pkt_ptr pkt) {

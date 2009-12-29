@@ -19,6 +19,7 @@
 #define LT_LISTEN_PORT "6969"
 #define LT_MAX_CONNECTIONS 10
 #define LT_SERIAL_PORT "/dev/ttyS0"
+#define LT_STATE_TIMEOUT 60
 
 static char response_flag = 0;
 int lock_state, priv_state, wire_state;
@@ -96,19 +97,19 @@ void update_states(const hiwi_pkt_ptr pkt) {
 
     if (size != 0) {
         switch (op) {
-            case 0x0:
+            case HIWI_LOCKED_OPCODE:
                 res = get_data(pkt, &lock_state);
                 if (res == 0) {
                     time(&lock_time);
                 }
                 break;
-            case 0x1:
+            case HIWI_PRIVACY_OPCODE:
                 res = get_data(pkt, &priv_state);
                 if (res == 0) {
                     time(&priv_time);
                 }
                 break;
-            case 0x2:
+            case HIWI_1_WIRE_OPCODE:
                 res = get_data(pkt, &wire_state);
                 if (res == 0) {
                     time(&wire_time);
@@ -118,81 +119,105 @@ void update_states(const hiwi_pkt_ptr pkt) {
     }
 }
 
+void send_hiwi_pkt(const hiwi_pkt_ptr pkt, int out_interface) {
+    size_t sent, size;
+    do {
+        size = sizeof *pkt;
+        sent = send(out_interface, pkt, size, 0);
+    } while (sent != size);
+}
+
 // Response handler - forward if needed
 int response_handler(const hiwi_pkt_ptr pkt, int out_interface) {
-    size_t sent, size;
-
     // Update states in both cases, only send if response needed
-    switch (response_flag) {
-        case 1:
-            do {
-                size = sizeof *pkt;
-                sent = send(out_interface, pkt, size, 0);
-            } while (sent != size);
-            response_flag = 0;
-        case 0:
-            update_states(pkt);
+    if (response_flag) {
+        send_hiwi_pkt(pkt, out_interface);
+        response_flag = 0;
     }
-
-    return EXIT_SUCCESS;
-}
-
-// Command handler - always forward
-int command_handler(const hiwi_pkt_ptr pkt, int out_interface) {
-    size_t sent, size;
-
-    // We're gonna need to forward a response
-    response_flag = 1;
-
-    do {
-        size = sizeof *pkt;
-        sent = send(out_interface, pkt, size, 0);
-    } while (sent != size);
-
-    return EXIT_SUCCESS;
-}
-
-// Query handler - always forward
-int query_handler(const hiwi_pkt_ptr pkt, int out_interface) {
-    size_t sent, size;
-
-    // We're gonna need to forward a response
-    response_flag = 1;
-
-    do {
-        size = sizeof *pkt;
-        sent = send(out_interface, pkt, size, 0);
-    } while (sent != size);
-
-    return EXIT_SUCCESS;
-}
-
-// Broadcast handler - forward all broadcast packets on the opposite iface
-int broadcast_handler(const hiwi_pkt_ptr pkt, int out_interface) {
-    size_t sent, size;
-    do {
-        size = sizeof *pkt;
-        sent = send(out_interface, pkt, size, 0);
-    } while (size != sent);
 
     update_states(pkt);
 
     return EXIT_SUCCESS;
 }
 
-int handle_pkts(const hiwi_pkt_ptr pkt, int opp_interface) {
+// Command handler - always forward
+int command_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    // We're gonna need to forward a response
+    response_flag = 1;
+
+    send_hiwi_pkt(pkt, out_interface);
+    return EXIT_SUCCESS;
+}
+
+// Query handler - forward if data is stale
+int query_handler(const hiwi_pkt_ptr pkt, int in_interface, int out_interface) {
+    char op = get_opcode(pkt);
+    int res;
+    time_t cur_time;
+
+    res = time(&cur_time);
+    if (res != 0) {
+        perror("query_handler()");
+        return EXIT_FAILURE;
+    }
+
+    switch (op) {
+        case HIWI_LOCKED_OPCODE:
+            if (cur_time - lock_time > LT_STATE_TIMEOUT) {
+                send_hiwi_pkt(pkt, out_interface);
+                response_flag = 1;
+            } else {
+                hiwi_pkt_ptr new_pkt = gen_response(HIWI_LOCKED_OPCODE,
+                lock_state);
+                send_hiwi_pkt(new_pkt, in_interface);
+            }
+        case HIWI_PRIVACY_OPCODE:
+            if (cur_time - priv_time > LT_STATE_TIMEOUT) {
+                send_hiwi_pkt(pkt, out_interface);
+                response_flag = 1;
+            } else {
+                hiwi_pkt_ptr new_pkt = gen_response(HIWI_PRIVACY_OPCODE,
+                priv_state);
+                send_hiwi_pkt(new_pkt, in_interface);
+            }
+        case HIWI_1_WIRE_OPCODE:
+            if (cur_time - wire_time > LT_STATE_TIMEOUT) {
+                send_hiwi_pkt(pkt, out_interface);
+                response_flag = 1;
+            } else {
+                hiwi_pkt_ptr new_pkt = gen_response(HIWI_1_WIRE_OPCODE,
+                wire_state);
+                send_hiwi_pkt(new_pkt, in_interface);
+            }
+    }
+
+    return EXIT_SUCCESS;
+}
+
+// Broadcast handler - forward all broadcast packets on the opposite iface
+int broadcast_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    send_hiwi_pkt(pkt, out_interface);
+
+    update_states(pkt);
+
+    return EXIT_SUCCESS;
+}
+
+int handle_pkts(const hiwi_pkt_ptr pkt, int in_interface, int out_interface) {
     char mt = get_message_type(pkt);
 
     switch (mt) {
-        case 0x0:
-            return response_handler(pkt, opp_interface);
-        case 0x1:
-            return command_handler(pkt, opp_interface);
-        case 0x2:
-            return query_handler(pkt, opp_interface);
-        case 0xf:
-            return broadcast_handler(pkt, opp_interface);
+        case HIWI_RESPONSE_MT:
+            return response_handler(pkt, out_interface);
+        case HIWI_COMMAND_MT:
+            return command_handler(pkt, out_interface);
+        case HIWI_QUERY_MT:
+            return query_handler(pkt, in_interface, out_interface);
+        case HIWI_BROADCAST_MT:
+            return broadcast_handler(pkt, out_interface);
     }
+
+    return EXIT_FAILURE;
 }
 
 // Let's fire off some packets to initialize my state variables
@@ -256,6 +281,7 @@ int main() {
                     perror("recv()");
                 } else {
                     hiwi_pkt_ptr pkt = buf;
+                    handle_pkts(pkt, serial_fd, network_fd);
                 }
 
                 return EXIT_SUCCESS;
@@ -276,7 +302,7 @@ int main() {
                         perror("recv()");
                     } else {
                         hiwi_pkt_ptr pkt = buf;
-                        // More handling code
+                        handle_pkts(pkt, network_fd, serial_fd);
                     }
                 }
 
