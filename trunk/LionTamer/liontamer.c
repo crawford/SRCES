@@ -139,16 +139,30 @@ int response_handler(const hiwi_pkt_ptr pkt, int out_interface) {
 
 // Command handler - always forward
 int command_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    size_t sent, size;
+
     // We're gonna need to forward a response
     response_flag = 1;
+
+    do {
+        size = sizeof *pkt;
+        sent = send(out_interface, pkt, size, 0);
+    } while (sent != size);
 
     return EXIT_SUCCESS;
 }
 
 // Query handler - always forward
 int query_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    size_t sent, size;
+
     // We're gonna need to forward a response
     response_flag = 1;
+
+    do {
+        size = sizeof *pkt;
+        sent = send(out_interface, pkt, size, 0);
+    } while (sent != size);
 
     return EXIT_SUCCESS;
 }
