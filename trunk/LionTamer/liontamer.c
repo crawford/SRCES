@@ -13,11 +13,20 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <termio.h>
+#include <time.h>
 #include <unistd.h>
 
 #define LT_LISTEN_PORT "6969"
 #define LT_MAX_CONNECTIONS 10
 #define LT_SERIAL_PORT "/dev/ttyS0"
+
+int priv_state;
+int lock_state;
+int wire_state;
+
+time_t priv_time;
+time_t lock_time;
+time_t wire_time;
 
 // Opens the serial port, and then returns the file descriptor
 int open_serial_port() {
@@ -83,13 +92,51 @@ int open_network_port() {
     return sock;
 }
 
-/* This returns some sort of error code. Values will be listed 
- * eventually. Also, interface is an int. 0 is serial, 1 is network
- * The first argument is the returned pkt, modified in place.
- * The second is the packet it responds to.
- */
-int handle_pkts(hiwi_pkt_ptr ret, const hiwi_pkt_ptr pkt, int interface) {
-    char mt = get_message_type(pkt);
+// Update the state variables
+void update_states(const hiwi_pkt_ptr pkt) {
+    char op = get_opcode(pkt);
+    int res;
+    size_t size = get_size(pkt);
+
+    if (size != 0) {
+        switch (op) {
+            case 0x0:
+                res = get_data(pkt, &lock_state);
+                if (res == 0) {
+                    time(&lock_time);
+                }
+                break;
+            case 0x1:
+                res = get_data(pkt, &priv_state);
+                if (res == 0) {
+                    time(&priv_time);
+                }
+                break;
+            case 0x2:
+                res = get_data(pkt, &wire_state);
+                if (res == 0) {
+                    time(&wire_time);
+                }
+                break;
+        }
+    }
+}
+
+
+// Broadcast handler - forward all broadcast packets on the opposite iface
+int broadcast_handler(const hiwi_pkt_ptr pkt, int out_interface) {
+    size_t sent, size;
+    do {
+        size = sizeof *pkt;
+        sent = send(out_interface, pkt, size, 0);
+    } while (size != sent);
+
+    update_states(pkt);
+
+    return EXIT_SUCCESS;
+}
+
+int handle_pkts(const hiwi_pkt_ptr pkt, int interface, int opp_interface) {
 
     switch (mt) {
         case 0x0:
@@ -102,15 +149,28 @@ int handle_pkts(hiwi_pkt_ptr ret, const hiwi_pkt_ptr pkt, int interface) {
             // Query handler
             break;
         case 0xf:
-            // Broadcast handler
-            break;
+            return broadcast_handler(pkt, opp_interface);
     }
+}
 
-    return EXIT_SUCCESS;
+// Let's fire off some packets to initialize my state variables
+void init_states(int serial_fd) {
+    int sent, size, i;
+    hiwi_pkt_ptr pkts[3];
+
+    pkts[0] = query_lock_state;
+    pkts[1] = query_priv_state;
+    pkts[2] = query_1wire_state;
+
+    for (i = 0; i < 3; i++) {
+        size = sizeof pkts[i];
+        do {
+            sent = send(serial_fd, pkts[i], size, 0);
+        } while (sent != size);
+    }
 }
 
 int main() {
-
     fd_set fds;
     int fork_err, network_fd, select_err, serial_fd;
     size_t recv_size;
@@ -126,6 +186,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
+    init_states(serial_fd);
     while (1) {
         FD_ZERO(&fds);
         FD_SET(serial_fd, &fds);
@@ -150,7 +211,7 @@ int main() {
             if (fork_err == 0) {
                 recv_size = read(serial_fd, buf, 5);
                 if (recv_size == -1) {
-                    perror("read()");
+                    perror("recv()");
                 } else {
                     hiwi_pkt_ptr pkt = buf;
                 }
